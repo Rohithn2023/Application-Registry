@@ -1,13 +1,7 @@
-import { NextResponse } from 'next/server';
-import { searchExternalSimilarApplications } from '@/lib/webSearchSimilarity';
+import { NextRequest, NextResponse } from 'next/server';
+import { searchExternalSimilarApplications } from '@/lib/similarityService';
 
-/**
- * POST /api/similar-applications
- *
- * Dedicated backend endpoint for external web search for similar real-world applications.
- * ZERO dependency on internal Application Registry or database.
- */
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
@@ -24,13 +18,13 @@ export async function POST(request) {
         {
           source: 'web',
           results: [],
-          error: 'Application name or description is required for similarity search.',
+          error: 'Application name or description is required to find similar applications.',
         },
         { status: 400 }
       );
     }
 
-    // Call pure external web search service
+    // Perform live real-time web search for similar real-world applications (ZERO database queries)
     const searchResponse = await searchExternalSimilarApplications({
       applicationName: applicationName || '',
       applicationType: applicationType || '',
@@ -40,9 +34,15 @@ export async function POST(request) {
       coreFunctions: Array.isArray(coreFunctions) ? coreFunctions : [],
     });
 
-    return NextResponse.json(searchResponse);
+    return NextResponse.json({
+      source: searchResponse.source,
+      results: searchResponse.results,
+      applicationName,
+      similarApplications: searchResponse.results,
+      error: searchResponse.error,
+    });
   } catch (error) {
-    console.error('[SIMILARITY] Error in /api/similar-applications:', error);
+    console.error('[SIMILARITY] Error finding similar applications via web search:', error);
     return NextResponse.json(
       {
         source: 'web',

@@ -1,14 +1,28 @@
 'use client';
 
-import { APPLICATION_CATEGORIES, APPLICATION_STATUSES } from '@/types/database';
+import React from 'react';
+import {
+  APPLICATION_CATEGORIES,
+  APPLICATION_STATUSES,
+  ApplicationFilters,
+  ApplicationCategory,
+  ApplicationStatus,
+} from '@/types/database';
+
+interface SearchAndFiltersProps {
+  filters: ApplicationFilters;
+  onFiltersChange: (filters: ApplicationFilters) => void;
+  developers: string[];
+  technologies: string[];
+}
 
 export default function SearchAndFilters({
   filters,
   onFiltersChange,
   developers,
   technologies,
-}) {
-  const updateFilter = (key, value) => {
+}: SearchAndFiltersProps) {
+  const updateFilter = (key: keyof ApplicationFilters, value: string | boolean | undefined) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 
@@ -52,7 +66,7 @@ export default function SearchAndFilters({
         <select
           id="filter-category"
           value={filters.category || ''}
-          onChange={(e) => updateFilter('category', e.target.value)}
+          onChange={(e) => updateFilter('category', (e.target.value as ApplicationCategory) || undefined)}
           className="form-select text-xs py-2 max-w-[160px]"
         >
           <option value="">All Categories</option>
@@ -64,7 +78,7 @@ export default function SearchAndFilters({
         <select
           id="filter-status"
           value={filters.status || ''}
-          onChange={(e) => updateFilter('status', e.target.value)}
+          onChange={(e) => updateFilter('status', (e.target.value as ApplicationStatus) || undefined)}
           className="form-select text-xs py-2 max-w-[150px]"
         >
           <option value="">All Statuses</option>
@@ -76,7 +90,7 @@ export default function SearchAndFilters({
         <select
           id="filter-technology"
           value={filters.technology || ''}
-          onChange={(e) => updateFilter('technology', e.target.value)}
+          onChange={(e) => updateFilter('technology', e.target.value || undefined)}
           className="form-select text-xs py-2 max-w-[160px]"
         >
           <option value="">All Technologies</option>
@@ -87,8 +101,8 @@ export default function SearchAndFilters({
 
         <select
           id="filter-existing"
-          value={filters.is_existing ?? ''}
-          onChange={(e) => updateFilter('is_existing', e.target.value)}
+          value={filters.is_existing !== undefined ? String(filters.is_existing) : ''}
+          onChange={(e) => updateFilter('is_existing', e.target.value === '' ? undefined : e.target.value === 'true')}
           className="form-select text-xs py-2 max-w-[140px]"
         >
           <option value="">Existing / New</option>
@@ -99,7 +113,7 @@ export default function SearchAndFilters({
         <select
           id="filter-developer"
           value={filters.developer || ''}
-          onChange={(e) => updateFilter('developer', e.target.value)}
+          onChange={(e) => updateFilter('developer', e.target.value || undefined)}
           className="form-select text-xs py-2 max-w-[160px]"
         >
           <option value="">All Developers</option>

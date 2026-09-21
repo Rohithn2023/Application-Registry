@@ -1,19 +1,53 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   APPLICATION_STATUSES,
   APPLICATION_CATEGORIES,
+  Application,
+  Technology,
+  SimilarAppDetail,
+  CreateApplicationRequest,
+  TechnologyType,
+  ApplicationStatus,
+  ApplicationCategory,
 } from '@/types/database';
+
+interface ApplicationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: CreateApplicationRequest) => Promise<void>;
+  editingApp?: Application | null;
+  allApplications?: Application[];
+  allTechnologies?: Technology[];
+}
+
+interface FormDataState {
+  application_name: string;
+  description: string;
+  developer_name: string;
+  development_team: string;
+  category: ApplicationCategory | '';
+  status: ApplicationStatus;
+  version: string;
+  purpose: string;
+  is_existing: boolean;
+  additional_notes: string;
+  technologies: {
+    technology_name: string;
+    technology_type: TechnologyType;
+  }[];
+  similar_applications: string[];
+  related_applications: string[];
+}
 
 export default function ApplicationModal({
   isOpen,
   onClose,
   onSubmit,
   editingApp,
-  allApplications,
-}) {
-  const [formData, setFormData] = useState({
+}: ApplicationModalProps) {
+  const [formData, setFormData] = useState<FormDataState>({
     application_name: '',
     description: '',
     developer_name: '',
@@ -29,19 +63,21 @@ export default function ApplicationModal({
     related_applications: [],
   });
 
-  const [technologies, setTechnologies] = useState([]);
-  const [similarApps, setSimilarApps] = useState([]);
-  const [relatedApps, setRelatedApps] = useState([]);
-  const [detectedSimilarDetails, setDetectedSimilarDetails] = useState([]);
+  const [technologies, setTechnologies] = useState<
+    { technology_name: string; technology_type: TechnologyType }[]
+  >([]);
+  const [similarApps, setSimilarApps] = useState<string[]>([]);
+  const [relatedApps, setRelatedApps] = useState<string[]>([]);
+  const [detectedSimilarDetails, setDetectedSimilarDetails] = useState<SimilarAppDetail[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Document Upload States
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionError, setExtractionError] = useState(null);
-  const [uploadedFileName, setUploadedFileName] = useState(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isEditing = !!editingApp;
 
@@ -53,8 +89,8 @@ export default function ApplicationModal({
         description: editingApp.description || '',
         developer_name: editingApp.developer_name,
         development_team: editingApp.development_team || '',
-        category: editingApp.category || '',
-        status: editingApp.status,
+        category: (editingApp.category as ApplicationCategory) || '',
+        status: (editingApp.status as ApplicationStatus) || 'Active',
         version: editingApp.version || '1.0',
         purpose: editingApp.purpose || '',
         is_existing: editingApp.is_existing,
@@ -65,11 +101,11 @@ export default function ApplicationModal({
         })),
         similar_applications: (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Similar To')
-          .map((r) => r.related_application?.id)
+          .map((r) => r.related_application?.id || '')
           .filter(Boolean),
         related_applications: (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Related To')
-          .map((r) => r.related_application?.id)
+          .map((r) => r.related_application?.id || '')
           .filter(Boolean),
       });
       setTechnologies(
@@ -81,13 +117,13 @@ export default function ApplicationModal({
       setSimilarApps(
         (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Similar To')
-          .map((r) => r.related_application?.id)
+          .map((r) => r.related_application?.id || '')
           .filter(Boolean)
       );
       setRelatedApps(
         (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Related To')
-          .map((r) => r.related_application?.id)
+          .map((r) => r.related_application?.id || '')
           .filter(Boolean)
       );
       setDetectedSimilarDetails([]);
@@ -124,7 +160,7 @@ export default function ApplicationModal({
   };
 
   // Handle Document Upload & Auto-Extraction
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (file: File) => {
     const lowerName = file.name.toLowerCase();
     if (
       !lowerName.endsWith('.pdf') &&
@@ -169,7 +205,7 @@ export default function ApplicationModal({
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -177,7 +213,7 @@ export default function ApplicationModal({
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!formData.application_name) {
       setExtractionError('Application name is required.');
@@ -188,6 +224,7 @@ export default function ApplicationModal({
     try {
       await onSubmit({
         ...formData,
+        category: formData.category ? (formData.category as ApplicationCategory) : undefined,
         technologies,
         similar_applications: similarApps,
         related_applications: relatedApps,
@@ -201,16 +238,8 @@ export default function ApplicationModal({
     }
   };
 
-  const removeTechnology = (index) => {
+  const removeTechnology = (index: number) => {
     setTechnologies(technologies.filter((_, i) => i !== index));
-  };
-
-  const toggleAppSelection = (appId, list, setList) => {
-    if (list.includes(appId)) {
-      setList(list.filter((id) => id !== appId));
-    } else {
-      setList([...list, appId]);
-    }
   };
 
   if (!isOpen) return null;
@@ -352,7 +381,7 @@ export default function ApplicationModal({
                   Extracting Information...
                 </h3>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Parsing {uploadedFileName} and searching the web for similar real-world applications.
+                  Parsing {uploadedFileName} and discovering similar real-world applications.
                 </p>
               </div>
             </div>
@@ -439,20 +468,16 @@ export default function ApplicationModal({
                 )}
               </div>
 
-              {/* Similar Real-World Applications (Discovered via Real-Time Web Search) */}
+              {/* Similar Real-World Applications */}
               <div className="p-4 rounded-xl bg-white border border-zinc-200 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-[11px] uppercase tracking-wider font-bold text-zinc-700 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                     Similar Real-World Applications ({detectedSimilarDetails.length})
                   </label>
-                  <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="2" y1="12" x2="22" y2="12" />
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                    </svg>
-                    Live Web Search
+                  <span className="text-[10px] text-zinc-500 font-medium flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-100 border border-zinc-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {detectedSimilarDetails[0]?.source || 'Similarity Engine'}
                   </span>
                 </div>
 
@@ -650,7 +675,7 @@ export default function ApplicationModal({
                       id="field-category"
                       value={formData.category}
                       onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
+                        setFormData({ ...formData, category: e.target.value as ApplicationCategory })
                       }
                       className="form-select"
                     >
@@ -666,7 +691,7 @@ export default function ApplicationModal({
                       id="field-status"
                       value={formData.status}
                       onChange={(e) =>
-                        setFormData({ ...formData, status: e.target.value })
+                        setFormData({ ...formData, status: e.target.value as ApplicationStatus })
                       }
                       className="form-select"
                     >
@@ -810,7 +835,7 @@ export default function ApplicationModal({
                   </div>
                 ) : (
                   <p className="text-xs text-zinc-500 italic p-3 rounded-lg bg-zinc-50 border border-zinc-200">
-                    Real-world similar applications are discovered dynamically from the live internet when documentation is uploaded.
+                    Real-world similar applications are discovered dynamically when documentation is uploaded.
                   </p>
                 )}
               </div>

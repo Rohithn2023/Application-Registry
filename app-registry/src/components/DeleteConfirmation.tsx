@@ -1,12 +1,22 @@
 'use client';
 
+import React from 'react';
+
+interface DeleteConfirmationProps {
+  isOpen: boolean;
+  applicationName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  deleting: boolean;
+}
+
 export default function DeleteConfirmation({
   isOpen,
   applicationName,
   onConfirm,
   onCancel,
   deleting,
-}) {
+}: DeleteConfirmationProps) {
   if (!isOpen) return null;
 
   return (

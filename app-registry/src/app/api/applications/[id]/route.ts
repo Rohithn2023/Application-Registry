@@ -1,10 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { UpdateApplicationRequest } from '@/types/database';
 
 // ============================================
 // GET /api/applications/[id] — Get single application
 // ============================================
-export async function GET(request, { params }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = createServerSupabaseClient();
     const { id } = await params;
@@ -54,11 +58,14 @@ export async function GET(request, { params }) {
 // ============================================
 // PUT /api/applications/[id] — Update application
 // ============================================
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = createServerSupabaseClient();
     const { id } = await params;
-    const body = await request.json();
+    const body: UpdateApplicationRequest = await request.json();
 
     // Validate required fields
     if (!body.application_name || !body.developer_name) {
@@ -107,7 +114,7 @@ export async function PUT(request, { params }) {
           .eq('technology_type', tech.technology_type)
           .single();
 
-        let techId;
+        let techId: string;
 
         if (existingTech) {
           techId = existingTech.id;
@@ -121,7 +128,7 @@ export async function PUT(request, { params }) {
             .select()
             .single();
 
-          if (techError) continue;
+          if (techError || !newTech) continue;
           techId = newTech.id;
         }
 
@@ -168,7 +175,10 @@ export async function PUT(request, { params }) {
 // ============================================
 // DELETE /api/applications/[id] — Delete application
 // ============================================
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const supabase = createServerSupabaseClient();
     const { id } = await params;

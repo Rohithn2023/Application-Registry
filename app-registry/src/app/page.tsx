@@ -1,25 +1,31 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import SearchAndFilters from '@/components/SearchAndFilters';
 import ApplicationTable from '@/components/ApplicationTable';
 import ApplicationModal from '@/components/ApplicationModal';
 import ApplicationDetail from '@/components/ApplicationDetail';
 import DeleteConfirmation from '@/components/DeleteConfirmation';
+import {
+  Application,
+  Technology,
+  ApplicationFilters,
+  CreateApplicationRequest,
+} from '@/types/database';
 
 export default function Home() {
-  const [applications, setApplications] = useState([]);
-  const [allTechnologies, setAllTechnologies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({});
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [allTechnologies, setAllTechnologies] = useState<Technology[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [filters, setFilters] = useState<ApplicationFilters>({});
 
   // Modal states
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingApp, setEditingApp] = useState(null);
-  const [viewingApp, setViewingApp] = useState(null);
-  const [deletingApp, setDeletingApp] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [editingApp, setEditingApp] = useState<Application | null>(null);
+  const [viewingApp, setViewingApp] = useState<Application | null>(null);
+  const [deletingApp, setDeletingApp] = useState<Application | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Fetch applications
   const fetchApplications = useCallback(async () => {
@@ -28,13 +34,13 @@ export default function Home() {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== '') {
-          params.append(key, value);
+          params.append(key, String(value));
         }
       });
 
       const res = await fetch(`/api/applications?${params.toString()}`);
       if (res.ok) {
-        const data = await res.json();
+        const data: Application[] = await res.json();
         setApplications(data);
       }
     } catch (error) {
@@ -49,7 +55,7 @@ export default function Home() {
     try {
       const res = await fetch('/api/technologies');
       if (res.ok) {
-        const data = await res.json();
+        const data: Technology[] = await res.json();
         setAllTechnologies(data);
       }
     } catch (error) {
@@ -66,13 +72,13 @@ export default function Home() {
   }, [fetchTechnologies]);
 
   // Derived filter values
-  const developers = [...new Set(applications.map((a) => a.developer_name))].sort();
-  const technologyNames = [
-    ...new Set(allTechnologies.map((t) => t.technology_name)),
-  ].sort();
+  const developers = Array.from(new Set(applications.map((a) => a.developer_name))).sort();
+  const technologyNames = Array.from(
+    new Set(allTechnologies.map((t) => t.technology_name))
+  ).sort();
 
   // CRUD handlers
-  const handleCreateApplication = async (data) => {
+  const handleCreateApplication = async (data: CreateApplicationRequest) => {
     const res = await fetch('/api/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -88,7 +94,7 @@ export default function Home() {
     await fetchTechnologies();
   };
 
-  const handleUpdateApplication = async (data) => {
+  const handleUpdateApplication = async (data: CreateApplicationRequest) => {
     if (!editingApp) return;
 
     const res = await fetch(`/api/applications/${editingApp.id}`, {

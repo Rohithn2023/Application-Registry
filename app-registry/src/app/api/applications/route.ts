@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { CreateApplicationRequest } from '@/types/database';
 
 // ============================================
 // GET /api/applications — List all with search/filter
 // ============================================
-export async function GET(request) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
     const searchParams = request.nextUrl.searchParams;
@@ -92,7 +93,7 @@ export async function GET(request) {
     let result = enrichedApps;
     if (technology) {
       result = enrichedApps.filter((app) =>
-        app.technologies.some((t) =>
+        app.technologies.some((t: { technology_name?: string }) =>
           t.technology_name?.toLowerCase().includes(technology.toLowerCase())
         )
       );
@@ -108,10 +109,10 @@ export async function GET(request) {
 // ============================================
 // POST /api/applications — Create new application
 // ============================================
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
-    const body = await request.json();
+    const body: CreateApplicationRequest = await request.json();
 
     // Validate required fields
     if (!body.application_name || !body.developer_name) {
@@ -154,7 +155,7 @@ export async function POST(request) {
           .eq('technology_type', tech.technology_type)
           .single();
 
-        let techId;
+        let techId: string;
 
         if (existingTech) {
           techId = existingTech.id;
@@ -168,7 +169,7 @@ export async function POST(request) {
             .select()
             .single();
 
-          if (techError) continue;
+          if (techError || !newTech) continue;
           techId = newTech.id;
         }
 

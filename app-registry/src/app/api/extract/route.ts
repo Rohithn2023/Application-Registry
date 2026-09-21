@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { extractRawTextFromBuffer, parseApplicationMetadata } from '@/lib/extractor';
-import { searchExternalSimilarApplications } from '@/lib/webSearchSimilarity';
+import { searchExternalSimilarApplications } from '@/lib/similarityService';
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file');
+    const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json(

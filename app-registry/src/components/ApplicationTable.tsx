@@ -1,6 +1,17 @@
 'use client';
 
-function getStatusBadgeClass(status) {
+import React from 'react';
+import { Application } from '@/types/database';
+
+interface ApplicationTableProps {
+  applications: Application[];
+  loading: boolean;
+  onView: (app: Application) => void;
+  onEdit: (app: Application) => void;
+  onDelete: (app: Application) => void;
+}
+
+function getStatusBadgeClass(status?: string): string {
   switch ((status || '').toLowerCase()) {
     case 'active':
       return 'badge-active';
@@ -19,7 +30,7 @@ function getStatusBadgeClass(status) {
   }
 }
 
-function getTechTagClass(type) {
+function getTechTagClass(type?: string): string {
   switch ((type || '').toLowerCase()) {
     case 'programming language':
       return 'tech-tag-lang';
@@ -82,7 +93,7 @@ export default function ApplicationTable({
   onView,
   onEdit,
   onDelete,
-}) {
+}: ApplicationTableProps) {
   if (loading) {
     return (
       <div className="glass-card overflow-hidden">
