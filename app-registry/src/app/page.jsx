@@ -7,24 +7,18 @@ import ApplicationTable from '@/components/ApplicationTable';
 import ApplicationModal from '@/components/ApplicationModal';
 import ApplicationDetail from '@/components/ApplicationDetail';
 import DeleteConfirmation from '@/components/DeleteConfirmation';
-import {
-  ApplicationWithDetails,
-  ApplicationFilters,
-  CreateApplicationRequest,
-  Technology,
-} from '@/types/database';
 
 export default function Home() {
-  const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
-  const [allTechnologies, setAllTechnologies] = useState<Technology[]>([]);
+  const [applications, setApplications] = useState([]);
+  const [allTechnologies, setAllTechnologies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<ApplicationFilters>({});
+  const [filters, setFilters] = useState({});
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingApp, setEditingApp] = useState<ApplicationWithDetails | null>(null);
-  const [viewingApp, setViewingApp] = useState<ApplicationWithDetails | null>(null);
-  const [deletingApp, setDeletingApp] = useState<ApplicationWithDetails | null>(null);
+  const [editingApp, setEditingApp] = useState(null);
+  const [viewingApp, setViewingApp] = useState(null);
+  const [deletingApp, setDeletingApp] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch applications
@@ -78,7 +72,7 @@ export default function Home() {
   ].sort();
 
   // CRUD handlers
-  const handleCreateApplication = async (data: CreateApplicationRequest) => {
+  const handleCreateApplication = async (data) => {
     const res = await fetch('/api/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -94,7 +88,7 @@ export default function Home() {
     await fetchTechnologies();
   };
 
-  const handleUpdateApplication = async (data: CreateApplicationRequest) => {
+  const handleUpdateApplication = async (data) => {
     if (!editingApp) return;
 
     const res = await fetch(`/api/applications/${editingApp.id}`, {

@@ -1,22 +1,14 @@
 'use client';
 
 import { APPLICATION_CATEGORIES, APPLICATION_STATUSES } from '@/types/database';
-import { ApplicationFilters } from '@/types/database';
-
-interface SearchAndFiltersProps {
-  filters: ApplicationFilters;
-  onFiltersChange: (filters: ApplicationFilters) => void;
-  developers: string[];
-  technologies: string[];
-}
 
 export default function SearchAndFilters({
   filters,
   onFiltersChange,
   developers,
   technologies,
-}: SearchAndFiltersProps) {
-  const updateFilter = (key: keyof ApplicationFilters, value: string) => {
+}) {
+  const updateFilter = (key, value) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 

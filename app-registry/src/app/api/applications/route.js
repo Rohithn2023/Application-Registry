@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { CreateApplicationRequest } from '@/types/database';
 
 // ============================================
 // GET /api/applications — List all with search/filter
 // ============================================
-export async function GET(request: NextRequest) {
+export async function GET(request) {
   try {
     const supabase = createServerSupabaseClient();
     const searchParams = request.nextUrl.searchParams;
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch technologies and relationships for all applications
-    const appIds = applications.map((a) => a.id);
+    const appIds = (applications || []).map((a) => a.id);
 
     // Fetch technologies
     const { data: appTechs } = await supabase
@@ -68,13 +67,10 @@ export async function GET(request: NextRequest) {
       .in('application_id', appIds);
 
     // Merge data
-    const enrichedApps = applications.map((app) => {
+    const enrichedApps = (applications || []).map((app) => {
       const techs = (appTechs || [])
         .filter((at) => at.application_id === app.id)
-        .map((at) => {
-          const tech = at.technologies as unknown as { id: string; technology_name: string; technology_type: string };
-          return tech;
-        })
+        .map((at) => at.technologies)
         .filter(Boolean);
 
       const rels = (appRels || [])
@@ -82,7 +78,7 @@ export async function GET(request: NextRequest) {
         .map((ar) => ({
           id: ar.id,
           relationship_type: ar.relationship_type,
-          related_application: ar.related_app as unknown as { id: string; application_name: string },
+          related_application: ar.related_app,
         }));
 
       return {
@@ -96,7 +92,7 @@ export async function GET(request: NextRequest) {
     let result = enrichedApps;
     if (technology) {
       result = enrichedApps.filter((app) =>
-        app.technologies.some((t: { technology_name?: string; technology_type?: string }) =>
+        app.technologies.some((t) =>
           t.technology_name?.toLowerCase().includes(technology.toLowerCase())
         )
       );
@@ -112,10 +108,10 @@ export async function GET(request: NextRequest) {
 // ============================================
 // POST /api/applications — Create new application
 // ============================================
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const supabase = createServerSupabaseClient();
-    const body: CreateApplicationRequest = await request.json();
+    const body = await request.json();
 
     // Validate required fields
     if (!body.application_name || !body.developer_name) {
@@ -158,7 +154,7 @@ export async function POST(request: NextRequest) {
           .eq('technology_type', tech.technology_type)
           .single();
 
-        let techId: string;
+        let techId;
 
         if (existingTech) {
           techId = existingTech.id;

@@ -1,11 +1,6 @@
 'use client';
 
-interface HeaderProps {
-  applicationCount: number;
-  onAddClick: () => void;
-}
-
-export default function Header({ applicationCount, onAddClick }: HeaderProps) {
+export default function Header({ applicationCount, onAddClick }) {
   return (
     <header className="glass-card p-5 sm:p-6 mb-5">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

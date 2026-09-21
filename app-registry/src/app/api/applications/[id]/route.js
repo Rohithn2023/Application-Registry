@@ -1,14 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
-import { UpdateApplicationRequest } from '@/types/database';
 
 // ============================================
 // GET /api/applications/[id] — Get single application
 // ============================================
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request, { params }) {
   try {
     const supabase = createServerSupabaseClient();
     const { id } = await params;
@@ -30,9 +26,7 @@ export async function GET(
       .select('technology_id, technologies(id, technology_name, technology_type)')
       .eq('application_id', id);
 
-    const technologies = (appTechs || []).map((at) => {
-      return at.technologies as unknown as { id: string; technology_name: string; technology_type: string };
-    });
+    const technologies = (appTechs || []).map((at) => at.technologies).filter(Boolean);
 
     // Fetch relationships
     const { data: appRels } = await supabase
@@ -43,7 +37,7 @@ export async function GET(
     const relationships = (appRels || []).map((ar) => ({
       id: ar.id,
       relationship_type: ar.relationship_type,
-      related_application: ar.related_app as unknown as { id: string; application_name: string },
+      related_application: ar.related_app,
     }));
 
     return NextResponse.json({
@@ -60,14 +54,11 @@ export async function GET(
 // ============================================
 // PUT /api/applications/[id] — Update application
 // ============================================
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request, { params }) {
   try {
     const supabase = createServerSupabaseClient();
     const { id } = await params;
-    const body: UpdateApplicationRequest = await request.json();
+    const body = await request.json();
 
     // Validate required fields
     if (!body.application_name || !body.developer_name) {
@@ -116,7 +107,7 @@ export async function PUT(
           .eq('technology_type', tech.technology_type)
           .single();
 
-        let techId: string;
+        let techId;
 
         if (existingTech) {
           techId = existingTech.id;
@@ -177,10 +168,7 @@ export async function PUT(
 // ============================================
 // DELETE /api/applications/[id] — Delete application
 // ============================================
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request, { params }) {
   try {
     const supabase = createServerSupabaseClient();
     const { id } = await params;

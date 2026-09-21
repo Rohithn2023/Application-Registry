@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { searchExternalSimilarApplications } from '@/lib/webSearchSimilarity';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const body = await request.json();
     const {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       similarApplications: searchResponse.results,
       error: searchResponse.error,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('[SIMILARITY] Error finding similar applications via web search:', error);
     return NextResponse.json(
       {

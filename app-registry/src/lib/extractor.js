@@ -1,35 +1,12 @@
 import { extractText } from 'unpdf';
 import AdmZip from 'adm-zip';
 import {
-  CreateApplicationRequest,
   APPLICATION_CATEGORIES,
   APPLICATION_STATUSES,
-  TechnologyType,
-  SimilarRealWorldApplication,
 } from '../types/database';
 
-export interface ExtractedApplicationResult extends CreateApplicationRequest {
-  target_users?: string;
-  business_domain?: string;
-  core_purpose?: string;
-  core_functions?: string[];
-  major_modules?: string[];
-  similar_app_details?: Array<{
-    id: string;
-    application_name: string;
-    category?: string;
-    description?: string;
-    website?: string;
-    similarity_reason?: string;
-    match_reason?: string;
-    source?: string;
-    similarityScore?: number;
-  }>;
-  similar_real_world_apps?: SimilarRealWorldApplication[];
-}
-
 // Known technologies reference dictionary
-const TECH_DICTIONARY: { name: string; type: TechnologyType; aliases?: string[] }[] = [
+const TECH_DICTIONARY = [
   // Programming Languages
   { name: 'TypeScript', type: 'Programming Language', aliases: ['ts'] },
   { name: 'JavaScript', type: 'Programming Language', aliases: ['js', 'ecmascript'] },
@@ -108,11 +85,7 @@ const TECH_DICTIONARY: { name: string; type: TechnologyType; aliases?: string[] 
 /**
  * Extracts raw text from PDF or PPTX documents.
  */
-export async function extractRawTextFromBuffer(
-  buffer: Buffer,
-  filename: string,
-  mimeType?: string
-): Promise<string> {
+export async function extractRawTextFromBuffer(buffer, filename, mimeType) {
   const lowerName = filename.toLowerCase();
 
   // 1. PDF handling
@@ -138,7 +111,7 @@ export async function extractRawTextFromBuffer(
     try {
       const zip = new AdmZip(buffer);
       const entries = zip.getEntries();
-      const slideTexts: string[] = [];
+      const slideTexts = [];
 
       const slideEntries = entries
         .filter(
@@ -155,7 +128,7 @@ export async function extractRawTextFromBuffer(
       for (const entry of slideEntries) {
         const content = entry.getData().toString('utf8');
         const paragraphs = content.match(/<a:p[\s\S]*?<\/a:p>/gi) || [content];
-        const lines: string[] = [];
+        const lines = [];
 
         for (const p of paragraphs) {
           const matches = p.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/gi);
@@ -185,15 +158,12 @@ export async function extractRawTextFromBuffer(
 
 /**
  * Intelligent semantic extractor that parses raw text from documents into a structured
- * CreateApplicationRequest containing application identity, purpose, domain, and technologies.
+ * application object containing identity, purpose, domain, and technologies.
  *
  * NOTE: This function does NOT perform similarity search against any database or registry.
  * Similarity discovery is handled exclusively via real-time external web search.
  */
-export async function parseApplicationMetadata(
-  rawText: string,
-  filename: string
-): Promise<ExtractedApplicationResult> {
+export async function parseApplicationMetadata(rawText, filename) {
   if (process.env.GEMINI_API_KEY) {
     try {
       const aiExtracted = await extractWithGemini(rawText);
@@ -211,10 +181,7 @@ export async function parseApplicationMetadata(
 /**
  * Heuristic semantic rule engine to extract structured application details.
  */
-function extractWithHeuristics(
-  text: string,
-  filename: string
-): ExtractedApplicationResult {
+function extractWithHeuristics(text, filename) {
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -231,8 +198,8 @@ function extractWithHeuristics(
   let description = '';
   let targetUsers = '';
   let additionalNotes = '';
-  const coreFunctions: string[] = [];
-  const majorModules: string[] = [];
+  const coreFunctions = [];
+  const majorModules = [];
 
   // Line-by-line inspection for labeled key-value pairs
   for (const line of lines) {
@@ -387,8 +354,8 @@ function extractWithHeuristics(
   }
 
   // Technologies extraction: Strictly separate technologies, databases, APIs, frameworks
-  const foundTechs: { technology_name: string; technology_type: TechnologyType }[] = [];
-  const addedSet = new Set<string>();
+  const foundTechs = [];
+  const addedSet = new Set();
 
   for (const item of TECH_DICTIONARY) {
     const patterns = [item.name, ...(item.aliases || [])];
@@ -415,7 +382,7 @@ function extractWithHeuristics(
       if (!addedSet.has(item.toLowerCase()) && !/^(and|or|etc|used|with|including)$/i.test(item)) {
         foundTechs.push({
           technology_name: item,
-          technology_type: 'Other' as TechnologyType,
+          technology_type: 'Other',
         });
         addedSet.add(item.toLowerCase());
       }
@@ -447,7 +414,7 @@ function extractWithHeuristics(
 /**
  * Optional Gemini LLM extraction when GEMINI_API_KEY is available.
  */
-async function extractWithGemini(rawText: string): Promise<ExtractedApplicationResult | null> {
+async function extractWithGemini(rawText) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
@@ -510,6 +477,6 @@ ${rawText.slice(0, 8000)}
   };
 }
 
-function escapeRegExp(string: string) {
+function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

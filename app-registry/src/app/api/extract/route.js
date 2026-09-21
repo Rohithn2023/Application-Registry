@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { extractRawTextFromBuffer, parseApplicationMetadata } from '@/lib/extractor';
 import { searchExternalSimilarApplications } from '@/lib/webSearchSimilarity';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File | null;
+    const file = formData.get('file');
 
     if (!file) {
       return NextResponse.json(
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       extracted: enrichedData,
       previewSnippet: rawText.slice(0, 300),
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Extraction error:', error);
     const message = error instanceof Error ? error.message : 'Failed to extract document';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -1,15 +1,7 @@
 'use client';
 
-import { ApplicationWithDetails } from '@/types/database';
-
-interface ApplicationDetailProps {
-  application: ApplicationWithDetails | null;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-function getTechTypeColor(type: string) {
-  switch (type.toLowerCase()) {
+function getTechTypeColor(type) {
+  switch ((type || '').toLowerCase()) {
     case 'programming language': return 'tech-tag-lang';
     case 'frontend': return 'tech-tag-frontend';
     case 'backend': return 'tech-tag-backend';
@@ -20,8 +12,8 @@ function getTechTypeColor(type: string) {
   }
 }
 
-function getStatusBadge(status: string) {
-  switch (status.toLowerCase()) {
+function getStatusBadge(status) {
+  switch ((status || '').toLowerCase()) {
     case 'active': return 'badge-active';
     case 'in development': return 'badge-development';
     case 'beta': return 'badge-beta';
@@ -32,7 +24,7 @@ function getStatusBadge(status: string) {
   }
 }
 
-function getRelationIcon(type: string) {
+function getRelationIcon(type) {
   switch (type) {
     case 'Similar To': return '≈';
     case 'Related To': return '↔';
@@ -48,19 +40,19 @@ export default function ApplicationDetail({
   application,
   isOpen,
   onClose,
-}: ApplicationDetailProps) {
+}) {
   if (!isOpen || !application) return null;
 
-  const techByType: Record<string, typeof application.technologies> = {};
-  application.technologies.forEach((tech) => {
+  const techByType = {};
+  (application.technologies || []).forEach((tech) => {
     const type = tech.technology_type || 'Other';
     if (!techByType[type]) techByType[type] = [];
     techByType[type].push(tech);
   });
 
   // Group relationships by type
-  const relByType: Record<string, typeof application.relationships> = {};
-  application.relationships.forEach((rel) => {
+  const relByType = {};
+  (application.relationships || []).forEach((rel) => {
     if (!relByType[rel.relationship_type]) relByType[rel.relationship_type] = [];
     relByType[rel.relationship_type].push(rel);
   });

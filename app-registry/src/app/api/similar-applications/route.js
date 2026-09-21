@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { searchExternalSimilarApplications } from '@/lib/webSearchSimilarity';
 
 /**
@@ -7,7 +7,7 @@ import { searchExternalSimilarApplications } from '@/lib/webSearchSimilarity';
  * Dedicated backend endpoint for external web search for similar real-world applications.
  * ZERO dependency on internal Application Registry or database.
  */
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const body = await request.json();
     const {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(searchResponse);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('[SIMILARITY] Error in /api/similar-applications:', error);
     return NextResponse.json(
       {

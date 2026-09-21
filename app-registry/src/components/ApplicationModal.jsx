@@ -2,28 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-  ApplicationWithDetails,
-  CreateApplicationRequest,
   APPLICATION_STATUSES,
   APPLICATION_CATEGORIES,
-  TechnologyType,
-  Technology,
 } from '@/types/database';
-import { ExtractedApplicationResult } from '@/lib/extractor';
-
-interface ApplicationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreateApplicationRequest) => Promise<void>;
-  editingApp?: ApplicationWithDetails | null;
-  allApplications: ApplicationWithDetails[];
-  allTechnologies: Technology[];
-}
-
-interface TechEntry {
-  technology_name: string;
-  technology_type: TechnologyType;
-}
 
 export default function ApplicationModal({
   isOpen,
@@ -31,8 +12,8 @@ export default function ApplicationModal({
   onSubmit,
   editingApp,
   allApplications,
-}: ApplicationModalProps) {
-  const [formData, setFormData] = useState<CreateApplicationRequest>({
+}) {
+  const [formData, setFormData] = useState({
     application_name: '',
     description: '',
     developer_name: '',
@@ -48,31 +29,19 @@ export default function ApplicationModal({
     related_applications: [],
   });
 
-  const [technologies, setTechnologies] = useState<TechEntry[]>([]);
-  const [similarApps, setSimilarApps] = useState<string[]>([]);
-  const [relatedApps, setRelatedApps] = useState<string[]>([]);
-  const [detectedSimilarDetails, setDetectedSimilarDetails] = useState<
-    {
-      id: string;
-      application_name: string;
-      category?: string | null;
-      description?: string | null;
-      website?: string | null;
-      similarity_reason?: string;
-      match_reason?: string;
-      source?: string;
-      similarityScore?: number;
-    }[]
-  >([]);
+  const [technologies, setTechnologies] = useState([]);
+  const [similarApps, setSimilarApps] = useState([]);
+  const [relatedApps, setRelatedApps] = useState([]);
+  const [detectedSimilarDetails, setDetectedSimilarDetails] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Document Upload States
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionError, setExtractionError] = useState<string | null>(null);
-  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [extractionError, setExtractionError] = useState(null);
+  const [uploadedFileName, setUploadedFileName] = useState(null);
   const [showManualForm, setShowManualForm] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef(null);
 
   const isEditing = !!editingApp;
 
@@ -90,33 +59,33 @@ export default function ApplicationModal({
         purpose: editingApp.purpose || '',
         is_existing: editingApp.is_existing,
         additional_notes: editingApp.additional_notes || '',
-        technologies: editingApp.technologies.map((t) => ({
+        technologies: (editingApp.technologies || []).map((t) => ({
           technology_name: t.technology_name,
-          technology_type: t.technology_type as TechnologyType,
+          technology_type: t.technology_type,
         })),
-        similar_applications: editingApp.relationships
+        similar_applications: (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Similar To')
           .map((r) => r.related_application?.id)
           .filter(Boolean),
-        related_applications: editingApp.relationships
+        related_applications: (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Related To')
           .map((r) => r.related_application?.id)
           .filter(Boolean),
       });
       setTechnologies(
-        editingApp.technologies.map((t) => ({
+        (editingApp.technologies || []).map((t) => ({
           technology_name: t.technology_name,
-          technology_type: t.technology_type as TechnologyType,
+          technology_type: t.technology_type,
         }))
       );
       setSimilarApps(
-        editingApp.relationships
+        (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Similar To')
           .map((r) => r.related_application?.id)
           .filter(Boolean)
       );
       setRelatedApps(
-        editingApp.relationships
+        (editingApp.relationships || [])
           .filter((r) => r.relationship_type === 'Related To')
           .map((r) => r.related_application?.id)
           .filter(Boolean)
@@ -155,7 +124,7 @@ export default function ApplicationModal({
   };
 
   // Handle Document Upload & Auto-Extraction
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file) => {
     const lowerName = file.name.toLowerCase();
     if (
       !lowerName.endsWith('.pdf') &&
@@ -185,13 +154,13 @@ export default function ApplicationModal({
         throw new Error(json.error || 'Failed to extract information from document');
       }
 
-      const ext = json.extracted as ExtractedApplicationResult;
+      const ext = json.extracted;
       setFormData(ext);
       setTechnologies(ext.technologies || []);
       setSimilarApps(ext.similar_applications || []);
       setRelatedApps(ext.related_applications || []);
       setDetectedSimilarDetails(ext.similar_app_details || []);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error('File extraction error:', err);
       const msg = err instanceof Error ? err.message : 'Failed to parse document';
       setExtractionError(msg);
@@ -200,7 +169,7 @@ export default function ApplicationModal({
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -208,7 +177,7 @@ export default function ApplicationModal({
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!formData.application_name) {
       setExtractionError('Application name is required.');
@@ -232,25 +201,17 @@ export default function ApplicationModal({
     }
   };
 
-  const removeTechnology = (index: number) => {
+  const removeTechnology = (index) => {
     setTechnologies(technologies.filter((_, i) => i !== index));
   };
 
-  const toggleAppSelection = (
-    appId: string,
-    list: string[],
-    setList: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
+  const toggleAppSelection = (appId, list, setList) => {
     if (list.includes(appId)) {
       setList(list.filter((id) => id !== appId));
     } else {
       setList([...list, appId]);
     }
   };
-
-  const otherApps = allApplications.filter(
-    (a) => a.id !== editingApp?.id
-  );
 
   if (!isOpen) return null;
 

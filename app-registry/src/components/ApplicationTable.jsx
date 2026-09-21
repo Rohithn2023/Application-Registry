@@ -1,17 +1,7 @@
 'use client';
 
-import { ApplicationWithDetails } from '@/types/database';
-
-interface ApplicationTableProps {
-  applications: ApplicationWithDetails[];
-  loading: boolean;
-  onView: (app: ApplicationWithDetails) => void;
-  onEdit: (app: ApplicationWithDetails) => void;
-  onDelete: (app: ApplicationWithDetails) => void;
-}
-
-function getStatusBadgeClass(status: string): string {
-  switch (status.toLowerCase()) {
+function getStatusBadgeClass(status) {
+  switch ((status || '').toLowerCase()) {
     case 'active':
       return 'badge-active';
     case 'in development':
@@ -29,8 +19,8 @@ function getStatusBadgeClass(status: string): string {
   }
 }
 
-function getTechTagClass(type: string): string {
-  switch (type.toLowerCase()) {
+function getTechTagClass(type) {
+  switch ((type || '').toLowerCase()) {
     case 'programming language':
       return 'tech-tag-lang';
     case 'frontend':
@@ -92,7 +82,7 @@ export default function ApplicationTable({
   onView,
   onEdit,
   onDelete,
-}: ApplicationTableProps) {
+}) {
   if (loading) {
     return (
       <div className="glass-card overflow-hidden">
@@ -132,7 +122,7 @@ export default function ApplicationTable({
             </thead>
             <tbody>
               {applications.map((app) => {
-                const similarApps = app.relationships
+                const similarApps = (app.relationships || [])
                   .filter((r) => r.relationship_type === 'Similar To')
                   .map((r) => r.related_application?.application_name)
                   .filter(Boolean);
@@ -177,7 +167,7 @@ export default function ApplicationTable({
                     </td>
                     <td>
                       <div className="flex flex-wrap gap-1 max-w-[220px]">
-                        {app.technologies.slice(0, 3).map((tech, idx) => (
+                        {(app.technologies || []).slice(0, 3).map((tech, idx) => (
                           <span
                             key={idx}
                             className={`tech-tag ${getTechTagClass(tech.technology_type)}`}
@@ -185,9 +175,9 @@ export default function ApplicationTable({
                             {tech.technology_name}
                           </span>
                         ))}
-                        {app.technologies.length > 3 && (
+                        {(app.technologies || []).length > 3 && (
                           <span className="tech-tag tech-tag-lang">
-                            +{app.technologies.length - 3}
+                            +{(app.technologies || []).length - 3}
                           </span>
                         )}
                       </div>

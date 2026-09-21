@@ -1,5 +1,3 @@
-import { SimilarRealWorldApplication } from '@/types/database';
-
 /**
  * ============================================================================
  * EXTERNAL REAL-WORLD SIMILAR APPLICATION SEARCH SERVICE
@@ -18,21 +16,6 @@ import { SimilarRealWorldApplication } from '@/types/database';
  * ============================================================================
  */
 
-export interface ExternalSearchInput {
-  applicationName: string;
-  applicationType?: string;
-  category?: string;
-  description?: string;
-  purpose?: string;
-  coreFunctions?: string[];
-}
-
-export interface ExternalSearchResponse {
-  source: 'web';
-  results: SimilarRealWorldApplication[];
-  error?: string;
-}
-
 /**
  * Known non-application items (technologies, APIs, databases, cloud services, features, supporting services).
  * These must NEVER be returned as similar applications.
@@ -42,7 +25,7 @@ const EXCLUDED_NON_APP_PATTERNS = [
   /^(?:postgresql|postgres|mysql|mongodb|redis|sqlite|dynamodb|firebase|supabase|stripe|razorpay|paypal|twilio|sendgrid|auth0|docker|kubernetes|aws|amazon web services|gcp|google cloud|azure|cloudflare|nginx|apache|react|next\.js|vue\.js|angular|node\.js|express|django|fastapi|spring boot|flask|tailwind css|payment gateway|mapping service|authentication service|notification service|rest api|google maps|slack|microsoft teams|teams|android|iphone|ipad|ios|windows|macos|linux|git|github actions|graphql|rest|json|xml|http|https|html|css|javascript|typescript|python|java|c\+\+|c#|go|rust|ruby|php|swift|kotlin|dart|flutter|react native|electron)$/i,
 ];
 
-function isExcludedNonApp(candidateName: string): boolean {
+function isExcludedNonApp(candidateName) {
   const lower = candidateName.toLowerCase().trim();
   for (const pattern of EXCLUDED_NON_APP_PATTERNS) {
     if (pattern.test(lower)) return true;
@@ -53,7 +36,7 @@ function isExcludedNonApp(candidateName: string): boolean {
 /**
  * Filter out generic concepts, article titles, listicles, or encyclopedia meta pages.
  */
-function isArticleOrNoise(title: string): boolean {
+function isArticleOrNoise(title) {
   const lower = title.toLowerCase().trim();
 
   // Wikipedia meta / listicle / article prefixes
@@ -125,7 +108,7 @@ function isArticleOrNoise(title: string): boolean {
  *       "Deliveroo (food delivery)" -> "Deliveroo"
  *       "Uber Eats (app)" -> "Uber Eats"
  */
-function cleanCandidateTitle(rawTitle: string): string {
+function cleanCandidateTitle(rawTitle) {
   return rawTitle
     .replace(
       /\s*\((?:software|app|application|company|service|website|platform|business|food delivery|online ordering|enterprise|corporation)\)\s*$/i,
@@ -138,11 +121,7 @@ function cleanCandidateTitle(rawTitle: string): string {
  * Dynamically extract domain keywords from text (purpose, description, category, core functions)
  * to construct targeted external web queries.
  */
-function extractDomainKeywords(input: ExternalSearchInput): {
-  primaryDomain: string;
-  categoryHint: string;
-  searchQueries: string[];
-} {
+function extractDomainKeywords(input) {
   const combinedText = [
     input.applicationType,
     input.purpose,
@@ -221,7 +200,7 @@ function extractDomainKeywords(input: ExternalSearchInput): {
   }
 
   // Construct dynamic queries generated from the PDF's purpose and identity
-  const queries: string[] = [];
+  const queries = [];
 
   if (primaryDomain) {
     queries.push(`${primaryDomain} platforms applications`);
@@ -244,25 +223,15 @@ function extractDomainKeywords(input: ExternalSearchInput): {
   };
 }
 
-interface RawWebCandidate {
-  title: string;
-  snippet: string;
-  url: string;
-  source: string;
-}
-
 /**
  * Queries external web search APIs (MediaWiki Search API + DuckDuckGo API)
  * to retrieve real-world software applications and platforms from the live internet.
  */
-async function queryExternalWebSearch(
-  queries: string[],
-  targetAppName: string
-): Promise<{ candidates: RawWebCandidate[]; queryLog: string }> {
-  const candidates: RawWebCandidate[] = [];
-  const seenTitles = new Set<string>();
+async function queryExternalWebSearch(queries, targetAppName) {
+  const candidates = [];
+  const seenTitles = new Set();
   const targetLower = targetAppName.toLowerCase().trim();
-  const loggedQueries: string[] = [];
+  const loggedQueries = [];
 
   for (const query of queries) {
     loggedQueries.push(query);
@@ -286,8 +255,8 @@ async function queryExternalWebSearch(
         const searchItems = data.query?.search || [];
 
         for (const item of searchItems) {
-          const rawTitle = item.title as string;
-          const rawSnippet = (item.snippet as string)
+          const rawTitle = item.title;
+          const rawSnippet = (item.snippet || '')
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
@@ -345,12 +314,11 @@ async function queryExternalWebSearch(
         const relatedTopics = data.RelatedTopics || [];
 
         for (const topic of relatedTopics) {
-          // Topics can be individual items or topic groups
           const items = topic.Topics || [topic];
 
           for (const item of items) {
-            const text = (item.Text as string) || '';
-            const firstUrl = (item.FirstURL as string) || '';
+            const text = item.Text || '';
+            const firstUrl = item.FirstURL || '';
 
             if (!text || !firstUrl) continue;
 
@@ -398,9 +366,7 @@ async function queryExternalWebSearch(
  * Fetch detailed Wikipedia page summary for verified application information,
  * lead paragraph, and official page URL.
  */
-async function fetchCandidateSummary(
-  title: string
-): Promise<{ extract: string; pageUrl: string } | null> {
+async function fetchCandidateSummary(title) {
   try {
     const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
       title.replace(/\s+/g, '_')
@@ -430,11 +396,7 @@ async function fetchCandidateSummary(
  * Evaluates whether a candidate result is an actual application/platform
  * providing a comparable overall service.
  */
-function isRealWorldApplicationPlatform(
-  title: string,
-  snippet: string,
-  targetDomain: string
-): boolean {
+function isRealWorldApplicationPlatform(title, snippet, targetDomain) {
   const combined = `${title} ${snippet}`.toLowerCase();
 
   // Must have indicators of being an app, platform, service, company, or marketplace
@@ -456,25 +418,12 @@ function isRealWorldApplicationPlatform(
  * Computes dynamic similarity score and contextual explanation
  * between the target application and an externally discovered candidate.
  */
-function analyzeSimilarity(
-  target: {
-    name: string;
-    domain: string;
-    category: string;
-    combinedText: string;
-    coreFunctions: string[];
-  },
-  candidate: {
-    name: string;
-    description: string;
-    category: string;
-  }
-): { score: number; reason: string } {
+function analyzeSimilarity(target, candidate) {
   const candText = `${candidate.name} ${candidate.description} ${candidate.category}`.toLowerCase();
   const targetText = target.combinedText.toLowerCase();
 
   let score = 70;
-  const matchedFeatures: string[] = [];
+  const matchedFeatures = [];
 
   // Match key functional capabilities
   const capabilityChecks = [
@@ -527,9 +476,7 @@ function analyzeSimilarity(
  * - NO local arrays of registered applications
  * - Logging added for development verification
  */
-export async function searchExternalSimilarApplications(
-  input: ExternalSearchInput
-): Promise<ExternalSearchResponse> {
+export async function searchExternalSimilarApplications(input) {
   const appName = (input.applicationName || '').trim();
   const { primaryDomain, categoryHint, searchQueries } = extractDomainKeywords(input);
 
@@ -539,7 +486,7 @@ export async function searchExternalSimilarApplications(
     appName
   );
 
-  // 2. REQUIRED DEVELOPMENT LOGGING (Section 6)
+  // 2. REQUIRED DEVELOPMENT LOGGING
   console.log('[SIMILARITY] Source: EXTERNAL WEB SEARCH');
   console.log('[SIMILARITY] Registry query: DISABLED');
   console.log(`[SIMILARITY] Searching web for: ${queryLog}`);
@@ -555,7 +502,7 @@ export async function searchExternalSimilarApplications(
   }
 
   // 3. Filter and enrich candidates
-  const processedCandidates: SimilarRealWorldApplication[] = [];
+  const processedCandidates = [];
   const targetCombined = [
     input.applicationName,
     input.applicationType,
@@ -635,12 +582,12 @@ export async function searchExternalSimilarApplications(
  * Backward compatibility helper for findSimilarRealWorldApplications.
  */
 export async function findSimilarRealWorldApplications(
-  appName: string,
-  category?: string,
-  description?: string,
-  purpose?: string,
-  coreFunctions?: string[]
-): Promise<SimilarRealWorldApplication[]> {
+  appName,
+  category,
+  description,
+  purpose,
+  coreFunctions
+) {
   const res = await searchExternalSimilarApplications({
     applicationName: appName,
     category,
